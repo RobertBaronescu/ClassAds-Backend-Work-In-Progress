@@ -5,41 +5,41 @@ const Subcategory = require("../models/subcategory");
 
 exports.getAdsByCategory = async (req, res, next) => {
   try {
-    const count = await Ad.find({ categoryId: req.params.categoryId }).count();
-    const subcategoriesByParam = await Subcategory.find({
-      _id: { $in: req.query.subcategories },
-    });
-    const ads = [];
-
-    if (subcategoriesByParam.length) {
-      for (let i = 0; i < subcategoriesByParam.length; i++) {
-        const ad = await Ad.find({
-          subcategoryId: subcategoriesByParam[i]._id,
-        });
-        if (ad) {
-          ads.unshift(...ad);
-        }
-      }
-    } else {
-      const adsByCategory = await Ad.find({
-        categoryId: req.params.categoryId,
-      });
-
-      ads.push(...adsByCategory);
-    }
-
-    // const ads = await Ad.find({
-    //   subcategoryId: { $in: subcategoriesByParam },
-    // });
-
-    // .skip(+req.query.offset)
-    // .limit(3);
-
     const category = await Category.findOne({ _id: req.params.categoryId });
-
     const subcategories = await Subcategory.find({
       _id: { $in: category.subcategoriesIds },
     });
+    let filter = {};
+
+    if (req.query.subcategories) {
+      filter = { subcategoryId: { $in: req.query.subcategories } };
+    } else {
+      filter = {
+        categoryId: req.params.categoryId,
+      };
+    }
+
+    if (req.query.search) {
+      filter = {
+        ...filter,
+        title: { $regex: req.query.search, $options: "i" },
+      };
+    }
+
+    if (req.query.price) {
+      filter = {
+        ...filter,
+        price: {
+          $gte: Number(req.query.price[0]),
+          $lte: Number(req.query.price[1]),
+        },
+      };
+    }
+
+    const ads = await Ad.find(filter)
+      .skip(+req.query.offset)
+      .limit(3);
+    const count = await Ad.find(filter).count();
 
     return res.status(200).json({ ads, subcategories, count });
   } catch (error) {

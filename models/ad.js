@@ -16,7 +16,11 @@ const adSchema = mongoose.Schema({
     ref: "Category",
     required: false,
   },
-  subcategoryId: { type: String, required: false },
+  subcategoryId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Subcategory",
+    required: false,
+  },
   sponsored: { type: Boolean, required: false },
   views: { type: Number, required: false },
 });
